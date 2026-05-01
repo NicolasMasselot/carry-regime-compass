@@ -1,0 +1,107 @@
+universe:
+  - ticker: "USDBRL=X"
+    label: "USD/BRL"
+    asset_class: "fx_carry"
+  - ticker: "USDMXN=X"
+    label: "USD/MXN"
+    asset_class: "fx_carry"
+  - ticker: "USDTRY=X"
+    label: "USD/TRY"
+    asset_class: "fx_carry"
+  - ticker: "USDZAR=X"
+    label: "USD/ZAR"
+    asset_class: "fx_carry"
+  - ticker: "AUDJPY=X"
+    label: "AUD/JPY"
+    asset_class: "fx_carry"
+  - ticker: "EURJPY=X"
+    label: "EUR/JPY"
+    asset_class: "fx_carry"
+  - ticker: "NZDJPY=X"
+    label: "NZD/JPY"
+    asset_class: "fx_carry"
+  - ticker: "GBPJPY=X"
+    label: "GBP/JPY"
+    asset_class: "fx_carry"
+  - ticker: "EURUSD=X"
+    label: "EUR/USD"
+    asset_class: "fx_carry"
+    role: "reference"
+  - ticker: "USDJPY=X"
+    label: "USD/JPY"
+    asset_class: "fx_carry"
+    role: "reference"
+  - ticker: "USDCHF=X"
+    label: "USD/CHF"
+    asset_class: "fx_carry"
+    role: "reference"
+  - ticker: "^IRX"
+    label: "US 3M"
+    asset_class: "rates"
+    role: "leg"
+  - ticker: "^FVX"
+    label: "US 5Y"
+    asset_class: "rates"
+    role: "leg"
+  - ticker: "^TNX"
+    label: "US 10Y"
+    asset_class: "rates"
+  - ticker: "^TYX"
+    label: "US 30Y"
+    asset_class: "rates"
+  - ticker: "HYG"
+    label: "HY ETF"
+    asset_class: "credit"
+  - ticker: "LQD"
+    label: "IG ETF"
+    asset_class: "credit"
+  - ticker: "IEF"
+    label: "UST 7-10Y"
+    asset_class: "credit"
+    role: "leg"
+  - ticker: "^GSPC"
+    label: "S&P 500"
+    asset_class: "equity"
+  - ticker: "^STOXX50E"
+    label: "EuroStoxx"
+    asset_class: "equity"
+  - ticker: "^N225"
+    label: "Nikkei"
+    asset_class: "equity"
+  - ticker: "^FTSE"
+    label: "FTSE 100"
+    asset_class: "equity"
+  - ticker: "CL=F"
+    label: "WTI front"
+    asset_class: "commodity"
+  - ticker: "BZ=F"
+    label: "Brent"
+    asset_class: "commodity"
+    role: "leg"
+  - ticker: "GC=F"
+    label: "Gold"
+    asset_class: "commodity"
+  - ticker: "HG=F"
+    label: "Copper"
+    asset_class: "commodity"
+
+cache:
+  sqlite_path: "data/cache/prices.db"
+  parquet_dir: "data/cache/parquet"
+  ttl_minutes: 15
+fetch:
+  history_days: 400
+  request_timeout_s: 10.0
+  max_retries: 3
+  backoff_seconds: 2.0
+vol:
+  window_days: 30
+  annualization_factor: 252
+  min_observations: 20
+regime:
+  risk_on_carry_z_min: 0.5
+  risk_on_vol_z_max: -0.2
+  deleveraging_vol_z_min: 1.0
+  deleveraging_carry_z_max: -0.3
+  transition_smoothing_days: 5
+refresh_seconds: 300

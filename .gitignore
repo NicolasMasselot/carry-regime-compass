@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+data/cache/*.db
+data/cache/*.parquet
+data/snapshots/
+logs/
+.env
+.streamlit/secrets.toml
+.DS_Store
+.idea/
+.vscode/
