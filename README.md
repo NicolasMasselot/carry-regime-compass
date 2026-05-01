@@ -9,6 +9,7 @@ Le projet ne cherche pas à produire un signal de trading automatique. Il sert p
 ## Lancer le projet
 
 ```bash
+cd "Carry Regime Compass"
 pip install -e ".[dev]"
 streamlit run carry_compass/viz/app.py
 ```
@@ -37,11 +38,11 @@ En local, si le script `streamlit` de l’environnement virtuel n’est pas disp
 
 ## Architecture Python
 
-- `config/` : univers de 26 tickers, paramètres et seuils de régime.
-- `data/` et `cache/` : téléchargement, nettoyage yfinance, cache SQLite.
-- `carry/` et `vol/` : calculs financiers par classe d’actifs.
-- `regime/` : centroïde macro, classification, smoothing des transitions.
-- `viz/` : interface Streamlit et graphiques Plotly.
+- `carry_compass/config/` : univers de 26 tickers, paramètres et seuils de régime.
+- `carry_compass/data/` et `carry_compass/cache/` : téléchargement, nettoyage yfinance, cache SQLite.
+- `carry_compass/carry/` et `carry_compass/vol/` : calculs financiers par classe d’actifs.
+- `carry_compass/regime/` : centroïde macro, classification, smoothing des transitions.
+- `carry_compass/viz/` : interface Streamlit et graphiques Plotly.
 - `tests/` : tests unitaires sur les invariants financiers et les composants critiques.
 
 ## Limites connues
