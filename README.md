@@ -1,53 +1,63 @@
 # Carry Regime Compass
 
-Projet réalisé dans le cadre du cours **Python for Finance** du M1 Finance de Marché à l’ESCP. L’objectif est de construire un outil quantitatif complet, lisible et maintenable, qui combine collecte de données, calculs financiers, classification de régime et visualisation interactive.
+Cross-asset carry-to-volatility dashboard that turns market data into a quick macro regime read.
 
-L’idée financière est simple : une stratégie de carry n’est attractive que si le rendement porté compense suffisamment le risque réalisé. Le dashboard mesure donc un ratio **carry-to-volatility** sur FX, taux, crédit, actions et matières premières, puis en déduit un régime macro simple : **Risk-On**, **Mid-Cycle**, **Late-Cycle** ou **Deleveraging**.
+![Carry Regime Compass dashboard](docs/assets/carry-regime-compass-dashboard.png)
 
-Le projet ne cherche pas à produire un signal de trading automatique. Il sert plutôt de tableau de bord macro : il permet de voir rapidement si le marché rémunère le risque de carry, si la volatilité devient dominante, et comment évolue le régime de marché.
+## Why
 
-## Lancer le projet
+Carry only matters if the compensation is large enough relative to realized risk. This project packages that idea into an interactive dashboard for checking whether FX, rates, credit, equity, and commodity markets are rewarding carry or being dominated by volatility.
+
+## What It Does
+
+- Fetches market prices from Yahoo Finance and caches them locally in SQLite.
+- Computes carry proxies by asset class, then normalizes them against 30-day realized volatility.
+- Ranks assets by carry-to-volatility, similar to a simplified ex-ante Sharpe lens.
+- Builds a cross-asset centroid and classifies the current market state as Risk-On, Mid-Cycle, Late-Cycle, or Deleveraging.
+- Shows the current regime, recent transitions, asset ranking, scatter map, and methodology in Streamlit.
+
+## Use It
 
 ```bash
-cd "Carry Regime Compass"
+git clone https://github.com/NicolasMasselot/carry-regime-compass.git
+cd carry-regime-compass
+
+python -m venv .venv
+source .venv/bin/activate
 pip install -e ".[dev]"
-streamlit run carry_compass/viz/app.py
+
+python -m streamlit run carry_compass/viz/app.py
 ```
 
-En local, si le script `streamlit` de l’environnement virtuel n’est pas disponible :
+Run the tests:
 
 ```bash
-.venv/bin/python -m streamlit run carry_compass/viz/app.py
+pytest
 ```
 
-## Ce que montre l'application
+## Stack
 
-- Un scatter carry/vol par actif pour comparer le rendement porté au risque réalisé.
-- Un classement des actifs par ratio carry-to-volatility, proche d’un Sharpe ex-ante simplifié.
-- Un régime macro courant basé sur le centroïde cross-asset du marché.
-- Une timeline des régimes récents pour visualiser les transitions.
-- Une section methodology qui rend les hypothèses financières lisibles sans ouvrir le code.
+- Python 3.11
+- Streamlit and Plotly for the dashboard
+- pandas, NumPy, SciPy, and yfinance for market data and analytics
+- SQLAlchemy and SQLite for local price caching
+- Pydantic and YAML for configuration
+- pytest and Ruff for quality checks
 
-## Méthode financière
+## Project Structure
 
-- Données : prix Yahoo Finance, normalisés puis stockés dans un cache SQLite.
-- Carry : proxy annualisé en décimal, calculé séparément pour chaque classe d’actifs.
-- Volatilité : volatilité réalisée 30 jours, annualisée.
-- Ratio : carry divisé par volatilité réalisée, proche d’un Sharpe ex-ante simplifié.
-- Régime : médiane cross-sectionnelle du carry et de la vol, puis z-score historique et classification.
+- `carry_compass/config/` defines the asset universe and regime thresholds.
+- `carry_compass/data/` fetches and normalizes Yahoo Finance data.
+- `carry_compass/cache/` stores price history locally.
+- `carry_compass/carry/` computes asset-class-specific carry proxies.
+- `carry_compass/vol/` computes realized volatility.
+- `carry_compass/regime/` builds the centroid, classification, and transition smoothing.
+- `carry_compass/viz/` contains the Streamlit app and Plotly components.
+- `tests/` covers the core financial invariants and data-processing behavior.
 
-## Architecture Python
+## Known Limits
 
-- `carry_compass/config/` : univers de 26 tickers, paramètres et seuils de régime.
-- `carry_compass/data/` et `carry_compass/cache/` : téléchargement, nettoyage yfinance, cache SQLite.
-- `carry_compass/carry/` et `carry_compass/vol/` : calculs financiers par classe d’actifs.
-- `carry_compass/regime/` : centroïde macro, classification, smoothing des transitions.
-- `carry_compass/viz/` : interface Streamlit et graphiques Plotly.
-- `tests/` : tests unitaires sur les invariants financiers et les composants critiques.
-
-## Limites connues
-
-- FX : carry approximé par différentiels de taux directeurs, pas par vrais points de swap.
-- Crédit : rendement ETF utilisé comme proxy, pas un vrai spread OAS.
-- Actions : earnings yield basé sur P/E statique, pas sur prévisions point-in-time.
-- Matières premières : proxies Yahoo faute de courbes futures complètes.
+- FX carry is approximated with policy-rate differentials, not swap points.
+- Credit uses ETF yield proxies rather than full OAS curves.
+- Equity carry uses static earnings-yield inputs instead of point-in-time forecasts.
+- Commodity carry is proxy-based because full futures curves are not available from Yahoo Finance.
