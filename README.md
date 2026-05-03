@@ -1,8 +1,8 @@
-# Carry Regime Compass
+# Carry Régime Compass
 
 Cross-asset carry-to-volatility dashboard that turns market data into a quick macro regime read.
 
-![Carry Regime Compass dashboard](docs/assets/carry-regime-compass-dashboard.png)
+![Carry Régime Compass dashboard](docs/assets/carry-regime-compass-dashboard.png)
 
 ## Why
 
