@@ -18,6 +18,10 @@ Carry only matters if the compensation is large enough relative to realized risk
 
 ## Use It
 
+First-time setup can take a few minutes because the project installs the scientific Python stack (`pandas`, `numpy`, `scipy`, `streamlit`, `plotly`, `yfinance`). After that, you only need to reactivate the environment and run Streamlit.
+
+### First Install
+
 ```bash
 git clone https://github.com/NicolasMasselot/carry-regime-compass.git
 cd carry-regime-compass
@@ -25,7 +29,28 @@ cd carry-regime-compass
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
+```
 
+### Run The App
+
+```bash
+source .venv/bin/activate
+python -m streamlit run carry_compass/viz/app.py
+```
+
+The first app launch may also take a moment while Yahoo Finance data is fetched and cached locally in SQLite. Later launches reuse the cache.
+
+### Faster Setup With uv
+
+If `uv` is installed:
+
+```bash
+git clone https://github.com/NicolasMasselot/carry-regime-compass.git
+cd carry-regime-compass
+
+uv venv
+source .venv/bin/activate
+uv pip install -e ".[dev]"
 python -m streamlit run carry_compass/viz/app.py
 ```
 
