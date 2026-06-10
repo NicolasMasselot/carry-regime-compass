@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import html
-import datetime as dt
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -11,16 +10,11 @@ from carry_compass.backtest.engine import BacktestResult, run_backtest
 from carry_compass.backtest.metrics import compute_metrics, compute_regime_diagnostics
 from carry_compass.config.schema import AppConfig
 from carry_compass.viz.theme import (
-    BG_MAIN,
-    BG_PANEL,
-    BORDER,
-    GRID,
     NEGATIVE,
     POSITIVE,
     REGIME_COLORS_DARK,
     TEXT_PRIMARY,
     TEXT_SECONDARY,
-    WARNING,
     apply_dark_theme,
 )
 

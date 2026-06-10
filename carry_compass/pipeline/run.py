@@ -23,10 +23,9 @@ from pathlib import Path
 import pandas as pd
 from loguru import logger
 
-from carry_compass.config import load_config
 from carry_compass.pipeline.ingest import run_ingest
 from carry_compass.pipeline.model import run_inference
-from carry_compass.pipeline.transform import build_prices_from_cache, run_transform
+from carry_compass.pipeline.transform import run_transform
 from carry_compass.utils.logging import configure_logging
 
 
@@ -82,7 +81,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--lookback", type=int, default=None, help="Override history window in days.")
     args = parser.parse_args(argv)
 
-    cfg = load_config()
     snapshot_dir = Path("data/snapshots")
 
     logger.info("=== Carry Regime Compass Pipeline ===")

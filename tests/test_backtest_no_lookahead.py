@@ -13,7 +13,6 @@ from carry_compass.regime.classifier import Regime
 
 def _make_prices(dates: pd.DatetimeIndex, n_assets: int = 4) -> dict[str, pd.DataFrame]:
     """Synthetic OHLCV frames with constant price (no vol, trivial returns)."""
-    import numpy as np
 
     tickers = [f"FAKE{i}=F" for i in range(n_assets)]
     result = {}
