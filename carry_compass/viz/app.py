@@ -1,4 +1,5 @@
 import datetime as dt
+import os
 
 import pandas as pd
 import streamlit as st
@@ -7,12 +8,21 @@ from streamlit_autorefresh import st_autorefresh
 from carry_compass.cache import PriceCache
 from carry_compass.config import load_config
 from carry_compass.data.batch import fetch_universe
+from carry_compass.decision import (
+    build_headline_call,
+    maybe_notify,
+    recent_transitions,
+    record_new_transitions,
+)
 from carry_compass.regime.centroid import compute_centroid
 from carry_compass.regime.classifier import regime_timeseries
 from carry_compass.regime.transitions import detect_transitions, smoothed_regime
 from carry_compass.utils.logging import configure_logging
 from carry_compass.vol.panel import build_carry_vol_panel
 from carry_compass.viz.components import (
+    render_alert_banner,
+    render_headline_call,
+    render_how_to_read,
     render_kpi_strip,
     render_methodology,
     render_ranking_table,
@@ -134,6 +144,24 @@ def main() -> None:
         last_regime_row.get("regime_smoothed") or last_regime_row["regime"]
     )
 
+    # --- alert banner (regime change within last 7 days) ---
+    new_transitions = record_new_transitions(display_regimes, cache)
+    secrets: dict = {}
+    try:
+        secrets = dict(st.secrets)
+    except Exception:
+        secrets = dict(os.environ)
+    if new_transitions:
+        maybe_notify(new_transitions, secrets)
+    alerts = recent_transitions(display_regimes, lookback_days=7)
+    if alerts:
+        render_alert_banner(alerts)
+
+    # --- headline call ---
+    call = build_headline_call(display_regimes, latest)
+    render_headline_call(call)
+
+    # --- KPI strip (supporting metrics) ---
     render_kpi_strip(
         current_regime,
         float(last_regime_row["carry_z"]),
@@ -141,6 +169,9 @@ def main() -> None:
         _last_transition_label(display_regimes),
     )
 
+    render_how_to_read()
+
+    # --- evidence: carry/vol map and asset ranking ---
     col_left, col_right = st.columns([0.6, 0.4], gap="medium")
     with col_left:
         st.markdown(
@@ -154,6 +185,7 @@ def main() -> None:
         st.markdown('<div class="crc-section-title">Asset Ranking</div>', unsafe_allow_html=True)
         render_ranking_table(latest)
 
+    # --- history ---
     st.markdown('<div class="crc-section-title">Regime Timeline</div>', unsafe_allow_html=True)
     render_regime_timeline(display_regimes)
     render_methodology()

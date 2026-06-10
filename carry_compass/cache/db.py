@@ -47,6 +47,19 @@ fetch_log = Table(
 )
 
 
+regime_log = Table(
+    "regime_log",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("from_regime", String(32), nullable=False),
+    Column("to_regime", String(32), nullable=False),
+    Column("confirmed_at", Date, nullable=False),
+    Column("recorded_at", DateTime, nullable=False),
+    UniqueConstraint("confirmed_at", "to_regime", name="uq_regime_log_transition"),
+    Index("ix_regime_log_confirmed_at", "confirmed_at"),
+)
+
+
 def make_engine(sqlite_path: Path) -> Engine:
     """Create a SQLite engine and initialize cache tables.
 

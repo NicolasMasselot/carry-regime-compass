@@ -6,7 +6,7 @@ import pandas as pd
 from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.sqlite import insert
 
-from carry_compass.cache.db import fetch_log, make_engine, prices
+from carry_compass.cache.db import fetch_log, make_engine, prices, regime_log
 from carry_compass.utils.time import to_utc_naive
 
 PRICE_COLUMNS = ["open", "high", "low", "close", "adj_close", "volume"]
@@ -176,6 +176,63 @@ class PriceCache:
         with self.engine.connect() as conn:
             rows = conn.execute(stmt).mappings().all()
         return pd.DataFrame(rows, columns=["ticker", "rows", "first", "last"])
+
+    def upsert_transition(
+        self,
+        from_regime: str,
+        to_regime: str,
+        confirmed_at: date,
+    ) -> None:
+        """Record a confirmed regime transition, ignoring duplicates.
+
+        Args:
+            from_regime: Label of the previous regime.
+            to_regime: Label of the new regime.
+            confirmed_at: Date the transition was confirmed.
+        """
+        stmt = insert(regime_log).values(
+            from_regime=from_regime,
+            to_regime=to_regime,
+            confirmed_at=confirmed_at,
+            recorded_at=datetime.now(timezone.utc).replace(tzinfo=None),
+        )
+        stmt = stmt.on_conflict_do_nothing(
+            index_elements=["confirmed_at", "to_regime"],
+        )
+        with self.engine.begin() as conn:
+            conn.execute(stmt)
+
+    def known_transition_dates(self) -> set[date]:
+        """Return the set of confirmed_at dates already in regime_log.
+
+        Returns:
+            Set of date objects; empty if no transitions have been recorded.
+        """
+        stmt = select(regime_log.c.confirmed_at)
+        with self.engine.connect() as conn:
+            rows = conn.execute(stmt).scalars().all()
+        return {_date(r) for r in rows}
+
+    def read_transitions(self, since: date | None = None) -> list[dict]:
+        """Read recorded regime transitions as a list of dicts.
+
+        Args:
+            since: Optional inclusive start date filter.
+
+        Returns:
+            List of dicts with from_regime, to_regime, confirmed_at, recorded_at.
+        """
+        stmt = select(
+            regime_log.c.from_regime,
+            regime_log.c.to_regime,
+            regime_log.c.confirmed_at,
+            regime_log.c.recorded_at,
+        ).order_by(regime_log.c.confirmed_at)
+        if since is not None:
+            stmt = stmt.where(regime_log.c.confirmed_at >= since)
+        with self.engine.connect() as conn:
+            rows = conn.execute(stmt).mappings().all()
+        return [dict(r) for r in rows]
 
     def purge(self, ticker: str | None = None) -> int:
         """Delete cached price rows.
