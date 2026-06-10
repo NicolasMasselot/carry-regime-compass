@@ -4,6 +4,11 @@ Cross-asset carry-to-volatility dashboard that turns market data into a quick ma
 
 ![Carry Regime Compass dashboard](docs/assets/carry-regime-compass-dashboard.png)
 
+Live apps:
+
+- Streamlit Cloud, full dashboard: <https://carry-regime-compass.streamlit.app>
+- Vercel, lightweight FastAPI/Plotly view: <https://carry-regime-compass.vercel.app>
+
 ## Why
 
 Carry only matters if the compensation is large enough relative to realized risk. This project packages that idea into an interactive dashboard for checking whether FX, rates, credit, equity, and commodity markets are rewarding carry or being dominated by volatility.
@@ -60,11 +65,22 @@ Run the tests:
 pytest
 ```
 
+## Deploy
+
+The Streamlit Cloud deployment uses:
+
+- repository: `NicolasMasselot/carry-regime-compass`
+- branch: `main`
+- main file path: `carry_compass/viz/app.py`
+- Python version: `3.12`
+
+Community Cloud installs Python dependencies from `requirements.txt`.
+
 ## Stack
 
-- Python 3.11
+- Python 3.12
 - Streamlit and Plotly for the dashboard
-- pandas, NumPy, SciPy, and yfinance for market data and analytics
+- pandas, NumPy, and yfinance for market data and analytics
 - SQLAlchemy and SQLite for local price caching
 - Pydantic and YAML for configuration
 - pytest and Ruff for quality checks
