@@ -7,7 +7,6 @@ Cross-asset carry-to-volatility dashboard that turns market data into a quick ma
 Live apps:
 
 - Streamlit Cloud, full dashboard: <https://carry-regime-compass.streamlit.app>
-- Vercel, lightweight FastAPI/Plotly view: <https://carry-regime-compass.vercel.app>
 
 ## Why
 
