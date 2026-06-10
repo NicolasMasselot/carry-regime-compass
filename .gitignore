@@ -7,7 +7,8 @@ __pycache__/
 .ruff_cache/
 data/cache/*.db
 data/cache/*.parquet
-data/snapshots/
+# data/snapshots/*.parquet ARE committed to git so Streamlit Cloud has fresh data.
+# The daily GitHub Action writes and pushes a new snapshot each weekday.
 logs/
 .env
 .streamlit/secrets.toml

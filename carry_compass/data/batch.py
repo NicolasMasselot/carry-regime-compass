@@ -6,12 +6,18 @@ from carry_compass.config import load_config
 from carry_compass.data.fetcher import DataFetcher, FetchResult
 
 
-def fetch_universe(force_refresh: bool = False, max_workers: int = 4) -> dict[str, FetchResult]:
+def fetch_universe(
+    force_refresh: bool = False,
+    max_workers: int = 4,
+    lookback_days: int | None = None,
+) -> dict[str, FetchResult]:
     """Fetch the configured universe concurrently.
 
     Args:
         force_refresh: If true, request fresh Yahoo data for every ticker.
         max_workers: Thread pool size, kept low to reduce Yahoo rate-limit risk.
+        lookback_days: Optional override for the configured history window.
+                       Useful for the backtest pipeline which needs longer history.
 
     Returns:
         Mapping of successfully fetched tickers to FetchResult objects. Ticker
@@ -23,7 +29,7 @@ def fetch_universe(force_refresh: bool = False, max_workers: int = 4) -> dict[st
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {
-            executor.submit(fetcher.fetch_history, asset.ticker, None, force_refresh): asset.ticker
+            executor.submit(fetcher.fetch_history, asset.ticker, lookback_days, force_refresh): asset.ticker
             for asset in cfg.universe
         }
         for future in as_completed(futures):

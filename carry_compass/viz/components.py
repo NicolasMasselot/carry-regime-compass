@@ -632,6 +632,15 @@ def render_sidebar(cache: PriceCache, fetch_results: dict[str, Any], cfg: AppCon
             unsafe_allow_html=True,
         )
 
+        data_source = st.session_state.get("crc_data_source", "live")
+        source_label = "SNAPSHOT" if data_source.startswith("snapshot:") else "LIVE FETCH"
+        source_color = WARNING if data_source.startswith("snapshot:") else POSITIVE
+        st.markdown(
+            f'<div class="crc-sidebar-row"><span>Data source</span>'
+            f'<strong style="color:{source_color};">{html.escape(source_label)}</strong></div>',
+            unsafe_allow_html=True,
+        )
+
         st.markdown('<div class="crc-sidebar-section"></div>', unsafe_allow_html=True)
         st.markdown('<div class="crc-sidebar-title">Controls</div>', unsafe_allow_html=True)
         force = st.button("FORCE REFRESH", width="stretch")

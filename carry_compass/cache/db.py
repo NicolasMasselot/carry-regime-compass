@@ -47,6 +47,17 @@ fetch_log = Table(
 )
 
 
+macro_series = Table(
+    "macro_series",
+    metadata,
+    Column("series_id", String(32), nullable=False),
+    Column("date", Date, nullable=False),
+    Column("value", Float, nullable=False),
+    Column("inserted_at", DateTime, nullable=False),
+    UniqueConstraint("series_id", "date", name="uq_macro_series"),
+    Index("ix_macro_series_id_date", "series_id", "date"),
+)
+
 regime_log = Table(
     "regime_log",
     metadata,

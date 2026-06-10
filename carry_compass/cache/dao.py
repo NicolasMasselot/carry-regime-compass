@@ -6,7 +6,7 @@ import pandas as pd
 from sqlalchemy import delete, func, select
 from sqlalchemy.dialects.sqlite import insert
 
-from carry_compass.cache.db import fetch_log, make_engine, prices, regime_log
+from carry_compass.cache.db import fetch_log, macro_series, make_engine, prices, regime_log
 from carry_compass.utils.time import to_utc_naive
 
 PRICE_COLUMNS = ["open", "high", "low", "close", "adj_close", "volume"]
@@ -176,6 +176,95 @@ class PriceCache:
         with self.engine.connect() as conn:
             rows = conn.execute(stmt).mappings().all()
         return pd.DataFrame(rows, columns=["ticker", "rows", "first", "last"])
+
+    def upsert_macro(self, series_id: str, df: pd.DataFrame) -> int:
+        """Upsert FRED macro series observations.
+
+        Args:
+            series_id: FRED series identifier (e.g. "VIXCLS").
+            df: Date-indexed Series or single-column DataFrame of values.
+
+        Returns:
+            Number of rows affected.
+        """
+        if df is None or (hasattr(df, "empty") and df.empty):
+            return 0
+        if isinstance(df, pd.DataFrame):
+            values_col = df.iloc[:, 0]
+        else:
+            values_col = df
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        rows = []
+        for idx, val in values_col.items():
+            if pd.isna(val):
+                continue
+            rows.append(
+                {
+                    "series_id": series_id,
+                    "date": _date(idx),
+                    "value": float(val),
+                    "inserted_at": now,
+                }
+            )
+        if not rows:
+            return 0
+        stmt = insert(macro_series).values(rows)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["series_id", "date"],
+            set_={"value": stmt.excluded.value, "inserted_at": stmt.excluded.inserted_at},
+        )
+        with self.engine.begin() as conn:
+            result = conn.execute(stmt)
+        return result.rowcount or 0
+
+    def read_macro(
+        self,
+        series_id: str,
+        start: date | None = None,
+        end: date | None = None,
+    ) -> pd.Series:
+        """Read a FRED macro series as a date-indexed Series.
+
+        Args:
+            series_id: FRED series identifier.
+            start: Optional inclusive start date.
+            end: Optional inclusive end date.
+
+        Returns:
+            Date-indexed Series of float values, empty if no rows match.
+        """
+        stmt = select(macro_series.c.date, macro_series.c.value).where(
+            macro_series.c.series_id == series_id
+        )
+        if start is not None:
+            stmt = stmt.where(macro_series.c.date >= start)
+        if end is not None:
+            stmt = stmt.where(macro_series.c.date <= end)
+        stmt = stmt.order_by(macro_series.c.date)
+        with self.engine.connect() as conn:
+            rows = conn.execute(stmt).mappings().all()
+        if not rows:
+            return pd.Series(dtype=float, name=series_id)
+        frame = pd.DataFrame(rows)
+        frame["date"] = pd.to_datetime(frame["date"])
+        return frame.set_index("date")["value"].rename(series_id)
+
+    def read_all_macro(self) -> pd.DataFrame:
+        """Read all FRED macro series as a wide DataFrame (date x series_id).
+
+        Returns:
+            DataFrame with DatetimeIndex, one column per series_id.
+        """
+        stmt = select(
+            macro_series.c.series_id, macro_series.c.date, macro_series.c.value
+        ).order_by(macro_series.c.date)
+        with self.engine.connect() as conn:
+            rows = conn.execute(stmt).mappings().all()
+        if not rows:
+            return pd.DataFrame()
+        frame = pd.DataFrame(rows)
+        frame["date"] = pd.to_datetime(frame["date"])
+        return frame.pivot_table(index="date", columns="series_id", values="value")
 
     def upsert_transition(
         self,

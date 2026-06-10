@@ -1,5 +1,6 @@
 import datetime as dt
 import os
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
@@ -78,15 +79,65 @@ def _latest_full_coverage_date(panel: pd.DataFrame) -> pd.Timestamp:
     return pd.Timestamp(full_coverage.index.max())
 
 
-@st.cache_data(ttl=120, show_spinner="Fetching universe...")
+def _latest_snapshot() -> Path | None:
+    """Return the most recent prices parquet snapshot, or None if absent or stale."""
+    snapshot_dir = Path("data/snapshots")
+    if not snapshot_dir.exists():
+        return None
+    candidates = sorted(snapshot_dir.glob("prices_*.parquet"), reverse=True)
+    if not candidates:
+        return None
+    latest = candidates[0]
+    try:
+        as_of = dt.date.fromisoformat(latest.stem.replace("prices_", ""))
+    except ValueError:
+        return None
+    # Accept snapshots up to 3 calendar days old (covers weekends)
+    if (dt.date.today() - as_of).days > 3:
+        return None
+    return latest
+
+
+def _prices_from_snapshot(path: Path) -> dict[str, pd.DataFrame]:
+    """Reconstruct a prices dict from a wide adj_close parquet snapshot."""
+    wide = pd.read_parquet(path)
+    prices: dict[str, pd.DataFrame] = {}
+    for ticker in wide.columns:
+        close = wide[ticker].dropna()
+        if close.empty:
+            continue
+        prices[ticker] = pd.DataFrame(
+            {
+                "open": close,
+                "high": close,
+                "low": close,
+                "close": close,
+                "adj_close": close,
+                "volume": 0.0,
+            }
+        )
+    return prices
+
+
+@st.cache_data(ttl=300, show_spinner="Loading data...")
 def _load_panel(force: bool = False):
-    res = fetch_universe(force_refresh=force)
-    prices = {ticker: result.df for ticker, result in res.items() if not result.df.empty}
+    fetch_results: dict = {}
+    snapshot = None if force else _latest_snapshot()
+
+    if snapshot is not None:
+        prices = _prices_from_snapshot(snapshot)
+        st.session_state["crc_data_source"] = f"snapshot:{snapshot.stem}"
+    else:
+        res = fetch_universe(force_refresh=force)
+        prices = {ticker: result.df for ticker, result in res.items() if not result.df.empty}
+        fetch_results = res
+        st.session_state["crc_data_source"] = "live"
+
     panel = build_carry_vol_panel(prices)
     centroid = compute_centroid(panel)
     regimes = regime_timeseries(centroid)
     regimes["regime_smoothed"] = smoothed_regime(regimes)
-    return panel, centroid, regimes, res, prices
+    return panel, centroid, regimes, fetch_results, prices
 
 
 def main() -> None:

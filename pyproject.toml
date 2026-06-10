@@ -18,6 +18,8 @@ dependencies = [
     "PyYAML>=6.0",
     "tenacity>=9.0",
     "SQLAlchemy>=2.0",
+    "pyarrow>=15.0",
+    "fredapi>=0.5",
 ]
 
 [project.optional-dependencies]

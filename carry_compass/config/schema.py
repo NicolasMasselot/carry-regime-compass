@@ -60,6 +60,19 @@ class RegimeThresholds(BaseModel):
     transition_smoothing_days: int = 5
 
 
+class FredSeriesConfig(BaseModel):
+    """One FRED data series to ingest."""
+
+    id: str
+    label: str
+
+
+class FredConfig(BaseModel):
+    """FRED macro series ingestion settings."""
+
+    series: list[FredSeriesConfig] = Field(default_factory=list)
+
+
 class AppConfig(BaseModel):
     """Validated application configuration loaded from YAML."""
 
@@ -68,6 +81,7 @@ class AppConfig(BaseModel):
     fetch: FetchConfig = Field(default_factory=FetchConfig)
     vol: VolConfig = Field(default_factory=VolConfig)
     regime: RegimeThresholds = Field(default_factory=RegimeThresholds)
+    fred: FredConfig = Field(default_factory=FredConfig)
     refresh_seconds: int = 300
 
     @field_validator("universe")
