@@ -7,7 +7,7 @@ name = "carry-regime-compass"
 version = "0.2.0"
 description = "Cross-asset carry-to-volatility monitor with macro regime inference."
 readme = "README.md"
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.11"
 dependencies = [
     "yfinance==1.3.0",
     "pandas==2.3.3",
