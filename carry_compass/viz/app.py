@@ -31,6 +31,7 @@ from carry_compass.viz.components import (
     render_sidebar,
     render_topbar,
 )
+from carry_compass.viz.pages.backtest import render_backtest_tab
 from carry_compass.viz.styles import inject_global_css
 
 st.set_page_config(
@@ -85,7 +86,7 @@ def _load_panel(force: bool = False):
     centroid = compute_centroid(panel)
     regimes = regime_timeseries(centroid)
     regimes["regime_smoothed"] = smoothed_regime(regimes)
-    return panel, centroid, regimes, res
+    return panel, centroid, regimes, res, prices
 
 
 def main() -> None:
@@ -101,7 +102,7 @@ def main() -> None:
         st_autorefresh(interval=cfg.refresh_seconds * 1000, key="auto_refresh_tick")
 
     force_refresh = _load_force_flag()
-    panel, centroid, regimes, fetch_results = _load_panel(force=force_refresh)
+    panel, centroid, regimes, fetch_results, prices = _load_panel(force=force_refresh)
     now_utc = dt.datetime.now(dt.UTC)
 
     if panel.empty or regimes.empty:
@@ -144,7 +145,7 @@ def main() -> None:
         last_regime_row.get("regime_smoothed") or last_regime_row["regime"]
     )
 
-    # --- alert banner (regime change within last 7 days) ---
+    # --- alert banner and transitions (shared across tabs) ---
     new_transitions = record_new_transitions(display_regimes, cache)
     secrets: dict = {}
     try:
@@ -157,38 +158,44 @@ def main() -> None:
     if alerts:
         render_alert_banner(alerts)
 
-    # --- headline call ---
-    call = build_headline_call(display_regimes, latest)
-    render_headline_call(call)
+    tab_dash, tab_bt = st.tabs(["DASHBOARD", "BACKTEST"])
 
-    # --- KPI strip (supporting metrics) ---
-    render_kpi_strip(
-        current_regime,
-        float(last_regime_row["carry_z"]),
-        float(last_regime_row["vol_z"]),
-        _last_transition_label(display_regimes),
-    )
+    with tab_dash:
+        # --- headline call ---
+        call = build_headline_call(display_regimes, latest)
+        render_headline_call(call)
 
-    render_how_to_read()
-
-    # --- evidence: carry/vol map and asset ranking ---
-    col_left, col_right = st.columns([0.6, 0.4], gap="medium")
-    with col_left:
-        st.markdown(
-            '<div class="crc-section-title">Carry/Vol Map · Latest Per Asset</div>',
-            unsafe_allow_html=True,
+        # --- KPI strip (supporting metrics) ---
+        render_kpi_strip(
+            current_regime,
+            float(last_regime_row["carry_z"]),
+            float(last_regime_row["vol_z"]),
+            _last_transition_label(display_regimes),
         )
-        trail = centroid.tail(60)[["carry_med", "vol_med"]]
-        render_scatter_dark(latest, trail)
 
-    with col_right:
-        st.markdown('<div class="crc-section-title">Asset Ranking</div>', unsafe_allow_html=True)
-        render_ranking_table(latest)
+        render_how_to_read()
 
-    # --- history ---
-    st.markdown('<div class="crc-section-title">Regime Timeline</div>', unsafe_allow_html=True)
-    render_regime_timeline(display_regimes)
-    render_methodology()
+        # --- evidence: carry/vol map and asset ranking ---
+        col_left, col_right = st.columns([0.6, 0.4], gap="medium")
+        with col_left:
+            st.markdown(
+                '<div class="crc-section-title">Carry/Vol Map · Latest Per Asset</div>',
+                unsafe_allow_html=True,
+            )
+            trail = centroid.tail(60)[["carry_med", "vol_med"]]
+            render_scatter_dark(latest, trail)
+
+        with col_right:
+            st.markdown('<div class="crc-section-title">Asset Ranking</div>', unsafe_allow_html=True)
+            render_ranking_table(latest)
+
+        # --- history ---
+        st.markdown('<div class="crc-section-title">Regime Timeline</div>', unsafe_allow_html=True)
+        render_regime_timeline(display_regimes)
+        render_methodology()
+
+    with tab_bt:
+        render_backtest_tab(panel, display_regimes, prices, cfg)
 
 
 if __name__ == "__main__":
