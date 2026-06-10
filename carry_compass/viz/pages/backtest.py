@@ -115,8 +115,8 @@ def _render_equity_chart(
             if i < len(labels) and labels[i] == labels[start_idx]:
                 continue
             label = labels[start_idx]
-            x0 = dates[start_idx]
-            x1 = dates[i - 1] if i < len(labels) else dates[-1]
+            x0 = pd.Timestamp(dates[start_idx]).isoformat()
+            x1 = pd.Timestamp(dates[i - 1] if i < len(labels) else dates[-1]).isoformat()
             color = REGIME_COLORS_DARK.get(label, TEXT_SECONDARY)
             fig.add_vrect(
                 x0=x0, x1=x1,
@@ -132,7 +132,7 @@ def _render_equity_chart(
     oos = result.oos_start
     if oos > is_start:
         fig.add_vrect(
-            x0=is_start, x1=oos,
+            x0=is_start.isoformat(), x1=oos.isoformat(),
             fillcolor="rgba(255,255,255,0.04)",
             layer="below",
             line={"color": "rgba(255,255,255,0.15)", "width": 1, "dash": "dot"},
@@ -141,7 +141,7 @@ def _render_equity_chart(
             annotation_font={"size": 10, "color": TEXT_SECONDARY},
         )
         fig.add_vline(
-            x=oos,
+            x=oos.isoformat(),
             line={"color": "rgba(255,255,255,0.45)", "width": 1, "dash": "dash"},
             annotation_text="OOS start",
             annotation_position="top right",
@@ -317,8 +317,8 @@ def _render_validation_chart(
         if i < len(labels) and labels[i] == labels[start_idx]:
             continue
         label = labels[start_idx]
-        x0 = dates_v[start_idx]
-        x1 = dates_v[i - 1] if i < len(labels) else dates_v[-1]
+        x0 = pd.Timestamp(dates_v[start_idx]).isoformat()
+        x1 = pd.Timestamp(dates_v[i - 1] if i < len(labels) else dates_v[-1]).isoformat()
         color = REGIME_COLORS_DARK.get(label, TEXT_SECONDARY)
         fig.add_vrect(
             x0=x0, x1=x1,
