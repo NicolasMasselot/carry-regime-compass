@@ -29,7 +29,6 @@ from carry_compass.viz.components import (
     render_ranking_table,
     render_regime_timeline,
     render_scatter_dark,
-    render_sidebar,
     render_topbar,
 )
 from carry_compass.viz.pages.backtest import render_backtest_tab
@@ -39,7 +38,7 @@ st.set_page_config(
     page_title="Carry Regime Compass",
     layout="wide",
     page_icon="🧭",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 
@@ -158,11 +157,6 @@ def main() -> None:
 
     if panel.empty or regimes.empty:
         render_topbar(fetch_results, now_utc)
-        force = render_sidebar(cache, fetch_results, cfg)
-        if force:
-            _load_panel.clear()
-            st.session_state["crc_force_refresh_next"] = True
-            st.rerun()
         st.error("No data available. Check logs/carry_compass.log.")
         return
 
@@ -174,22 +168,24 @@ def main() -> None:
     st.session_state["crc_latest_panel"] = latest
 
     render_topbar(fetch_results, now_utc)
-    force = render_sidebar(cache, fetch_results, cfg)
-    if force:
-        _load_panel.clear()
-        st.session_state["crc_force_refresh_next"] = True
-        st.rerun()
 
-    st.markdown(
-        f"""
-        <div class="crc-page-caption">
-            Cross-asset carry-to-volatility monitor · Yahoo Finance ·
-            latest per-asset observations {latest_min_date.strftime("%Y-%m-%d")}
-            to {last_date.strftime("%Y-%m-%d")} · regime date {regime_date.strftime("%Y-%m-%d")}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    col_cap, col_btn = st.columns([0.88, 0.12])
+    with col_cap:
+        st.markdown(
+            f"""
+            <div class="crc-page-caption">
+                Cross-asset carry-to-volatility monitor · Yahoo Finance ·
+                latest per-asset observations {latest_min_date.strftime("%Y-%m-%d")}
+                to {last_date.strftime("%Y-%m-%d")} · regime date {regime_date.strftime("%Y-%m-%d")}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with col_btn:
+        if st.button("Refresh data", use_container_width=True):
+            _load_panel.clear()
+            st.session_state["crc_force_refresh_next"] = True
+            st.rerun()
 
     last_regime_row = display_regimes.iloc[-1]
     current_regime = _regime_label(

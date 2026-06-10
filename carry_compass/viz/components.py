@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime as dt
 import html
-from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -10,8 +9,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from carry_compass.cache import PriceCache
-from carry_compass.config.schema import AppConfig, AssetClass
 from carry_compass.decision.call import HeadlineCall
 from carry_compass.regime.transitions import Transition
 from carry_compass.viz.theme import (
@@ -30,12 +27,6 @@ from carry_compass.viz.theme import (
 
 def _regime_label(value: object) -> str:
     return str(getattr(value, "value", value))
-
-
-def _asset_class_label(value: object) -> str:
-    if isinstance(value, AssetClass):
-        value = value.value
-    return str(value).replace("_", " ").upper()
 
 
 def _asset_class_short(value: object) -> str:
@@ -71,25 +62,6 @@ def _status(fetch_results: dict[str, Any]) -> tuple[str, str]:
         return "DELAYED", WARNING
     return "LIVE", POSITIVE
 
-
-def _cache_size_mb(cache: PriceCache) -> float:
-    path = Path(cache.sqlite_path)
-    if not path.exists():
-        return 0.0
-    return path.stat().st_size / (1024 * 1024)
-
-
-def _latest_fetch_time(fetch_results: dict[str, Any]) -> str:
-    if not fetch_results:
-        return "--:--:--"
-    return dt.datetime.now(dt.UTC).strftime("%H:%M:%S")
-
-
-def _latest_panel() -> pd.DataFrame:
-    value = st.session_state.get("crc_latest_panel")
-    if isinstance(value, pd.DataFrame):
-        return value
-    return pd.DataFrame()
 
 
 def _generate_export_html(call: HeadlineCall) -> str:
@@ -610,86 +582,3 @@ def render_methodology() -> None:
         st.latex(r"z_t=\frac{x_t-\mu(x)}{\sigma(x)}")
 
 
-def render_sidebar(cache: PriceCache, fetch_results: dict[str, Any], cfg: AppConfig) -> bool:
-    """Render the full sidebar and return whether the user requested a force refresh."""
-    latest = _latest_panel()
-    total = len(cfg.universe)
-    fetched = sum(
-        1 for result in fetch_results.values() if not getattr(result, "df", pd.DataFrame()).empty
-    )
-    stale = sum(1 for result in fetch_results.values() if getattr(result, "stale", False))
-
-    with st.sidebar:
-        st.markdown('<div class="crc-sidebar-title">Status</div>', unsafe_allow_html=True)
-        stale_class = "crc-neg" if stale else ""
-        st.markdown(
-            f"""
-            <div class="crc-sidebar-row"><span>Tickers fetched</span><strong>{fetched}/{total}</strong></div>
-            <div class="crc-sidebar-row"><span>Stale tickers</span><strong class="{stale_class}">{stale}</strong></div>
-            <div class="crc-sidebar-row"><span>Cache size</span><strong>{_cache_size_mb(cache):.1f} MB</strong></div>
-            <div class="crc-sidebar-row"><span>Last fetch</span><strong>{_latest_fetch_time(fetch_results)}</strong></div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        data_source = st.session_state.get("crc_data_source", "live")
-        source_label = "SNAPSHOT" if data_source.startswith("snapshot:") else "LIVE FETCH"
-        source_color = WARNING if data_source.startswith("snapshot:") else POSITIVE
-        st.markdown(
-            f'<div class="crc-sidebar-row"><span>Data source</span>'
-            f'<strong style="color:{source_color};">{html.escape(source_label)}</strong></div>',
-            unsafe_allow_html=True,
-        )
-
-        st.markdown('<div class="crc-sidebar-section"></div>', unsafe_allow_html=True)
-        st.markdown('<div class="crc-sidebar-title">Controls</div>', unsafe_allow_html=True)
-        force = st.button("FORCE REFRESH", width="stretch")
-        auto_refresh = st.toggle(
-            "Auto-refresh",
-            value=st.session_state.get("crc_auto_refresh", True),
-            key="crc_auto_refresh_toggle",
-        )
-        st.session_state["crc_auto_refresh"] = auto_refresh
-
-        st.markdown('<div class="crc-sidebar-section"></div>', unsafe_allow_html=True)
-        with st.expander("UNIVERSE", expanded=False):
-            for asset_class in AssetClass:
-                assets = [asset for asset in cfg.universe if asset.asset_class == asset_class]
-                if not assets:
-                    continue
-                st.markdown(
-                    f'<div class="crc-sidebar-title">{_asset_class_label(asset_class)}</div>',
-                    unsafe_allow_html=True,
-                )
-                for asset in assets:
-                    row = latest[latest["asset"].eq(asset.label)] if not latest.empty else pd.DataFrame()
-                    if row.empty and asset.ticker.endswith("=X") and not latest.empty:
-                        body = asset.ticker.replace("=X", "")
-                        row = latest[latest["asset"].eq(f"{body[:3]}/{body[3:]}")]
-                    values = "--"
-                    if not row.empty:
-                        item = row.iloc[0]
-                        values = f'{float(item["carry"]):+.2%} / {float(item["vol"]):.1%}'
-                    st.markdown(
-                        f"""
-                        <div class="crc-universe-row">
-                            <span>{html.escape(asset.ticker)}</span>
-                            <span>{html.escape(asset.label)}</span>
-                            <span>{html.escape(values)}</span>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-
-        with st.expander("DEBUG", expanded=False):
-            if st.button("View logs", width="stretch"):
-                log_path = Path("logs/carry_compass.log")
-                if log_path.exists():
-                    lines = log_path.read_text(errors="replace").splitlines()[-50:]
-                    st.code("\n".join(lines) or "No log lines found.")
-                else:
-                    st.code("logs/carry_compass.log not found.")
-            if st.button("View cache stats", width="stretch"):
-                st.dataframe(cache.stats(), width="stretch", hide_index=True)
-
-    return force

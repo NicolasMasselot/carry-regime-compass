@@ -2,11 +2,15 @@
 
 A cross-asset macro regime monitor that asks one question every day: are global markets rewarding carry, or punishing it? The answer drives a four-state regime label (Risk-On, Mid-Cycle, Late-Cycle, Deleveraging) with a walk-forward backtest to show whether that label would have been worth trading on.
 
+**Live app:** [carry-regime-compass.streamlit.app](https://carry-regime-compass.streamlit.app)
+
+![Carry Regime Compass dashboard](docs/assets/carry-regime-compass-dashboard.png)
+
 ---
 
 ## The problem
 
-Carry signals span every asset class, FX, rates, credit, equities, and commodities, but each is quoted in different units. A trader watching FX carry in isolation misses the signal from widening HY spreads or collapsing equity dividend yields. This project aggregates the carry-to-volatility ratio across all five asset classes into a single cross-asset centroid and classifies it against its own rolling history.
+Carry signals span every asset class - FX, rates, credit, equities, and commodities - but each is quoted in different units. A trader watching FX carry in isolation misses the signal from widening HY spreads or collapsing equity dividend yields. This project aggregates the carry-to-volatility ratio across all five asset classes into a single cross-asset centroid and classifies it against its own rolling history.
 
 ## The approach
 
@@ -35,7 +39,7 @@ The backtest applies a simple regime-conditional allocation rule:
 
 The UI shows an equity curve versus equal-weight benchmark, split into in-sample and out-of-sample windows. The default history is 400 days, which covers roughly one business cycle phase. Increase `history_days` in `carry_compass/config/universe.yaml` to 2000+ to see a longer track record including 2022.
 
-**Honest caveats**: regime thresholds are not fit from data, they are researcher-set and tested post-hoc. The signal is explanatory, not predictive in a strict statistical sense. Do not use this to size positions.
+**Honest caveats**: regime thresholds are not fit from data - they are researcher-set and tested post-hoc. The signal is explanatory, not predictive in a strict statistical sense. Do not use this to size positions.
 
 ---
 
@@ -43,7 +47,7 @@ The UI shows an equity curve versus equal-weight benchmark, split into in-sample
 
 ### Prerequisites
 
-- Python 3.11 (tested against 3.11 only; 3.12 works but is not CI-tested)
+- Python 3.11
 - Optional: `FRED_API_KEY` environment variable for macro overlays
 
 ### Setup
