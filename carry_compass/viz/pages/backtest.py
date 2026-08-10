@@ -128,11 +128,11 @@ def _render_equity_chart(
             start_idx = i
 
     # In-sample shading
-    is_start = curves.index[0]
-    oos = result.oos_start
+    is_start = pd.Timestamp(curves.index[0])
+    oos = pd.Timestamp(result.oos_start)
     if oos > is_start:
         fig.add_vrect(
-            x0=is_start.isoformat(), x1=oos.isoformat(),
+            x0=is_start, x1=oos,
             fillcolor="rgba(255,255,255,0.04)",
             layer="below",
             line={"color": "rgba(255,255,255,0.15)", "width": 1, "dash": "dot"},
@@ -141,11 +141,21 @@ def _render_equity_chart(
             annotation_font={"size": 10, "color": TEXT_SECONDARY},
         )
         fig.add_vline(
-            x=oos.isoformat(),
+            x=oos,
             line={"color": "rgba(255,255,255,0.45)", "width": 1, "dash": "dash"},
-            annotation_text="OOS start",
-            annotation_position="top right",
-            annotation_font={"size": 10, "color": TEXT_SECONDARY},
+        )
+        # Plotly's add_vline annotation helper averages the line's x values.
+        # That raises TypeError for datetime-like values, so keep the label separate.
+        fig.add_annotation(
+            x=oos,
+            y=1,
+            xref="x",
+            yref="paper",
+            text="OOS start",
+            showarrow=False,
+            xanchor="left",
+            yanchor="top",
+            font={"size": 10, "color": TEXT_SECONDARY},
         )
 
     oos_curves = curves[curves.index >= oos]
